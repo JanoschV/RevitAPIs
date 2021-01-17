@@ -1,0 +1,110 @@
+/*
+ * Created by SharpDevelop.
+ * User: Julian
+ * Date: 30/07/2019
+ * Time: 9:42 AM
+ * 
+ * To change this template use Tools | Options | Coding | Edit Standard Headers.
+ */
+using System;
+using Autodesk.Revit.UI;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI.Selection;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
+
+namespace TextWriter
+{
+    [Autodesk.Revit.Attributes.Transaction(Autodesk.Revit.Attributes.TransactionMode.Manual)]
+    [Autodesk.Revit.DB.Macros.AddInId("4732CB0F-D97E-47A3-AC75-A3546DF1576A")]
+	public partial class ThisApplication
+	{
+		private void Module_Startup(object sender, EventArgs e)
+		{
+
+		}
+
+		private void Module_Shutdown(object sender, EventArgs e)
+		{
+
+		}
+
+		#region Revit Macros generated code
+		private void InternalStartup()
+		{
+			this.Startup += new System.EventHandler(Module_Startup);
+			this.Shutdown += new System.EventHandler(Module_Shutdown);
+		}
+		#endregion
+		public void TextStream()
+		{
+			string fileN = @"C:\Users\Julian\Documents\TAFE Course\RevitMacroStream.txt";
+				if(File.Exists(fileN))
+			{
+				File.Delete(fileN);
+			}
+			using (StreamWriter writer = new StreamWriter(@"C:\Users\Julian\Documents\TAFE Course\RevitMacroStream.txt"))
+			{
+				writer.WriteLine("This is some text");
+				writer.WriteLine("This is some other text");
+			}
+		}
+		public void StreamReader()
+		{
+			string Filename	= @"C:\Users\Julian\Documents\TAFE Course\RevitMacroStream.txt";
+			
+			string fileCont = "";
+			using (StreamReader reader = new StreamReader(Filename))
+			{
+				string thisLine = "";
+				do
+				{
+					thisLine = reader.ReadLine();
+					fileCont += reader.ReadLine() + "\n";
+				}
+				while (thisLine != null);
+				
+				TaskDialog.Show(Filename,fileCont);
+			}
+			
+		}
+		public void DirectoryOps()
+		{
+			
+			string tempPath = Path.GetTempPath();
+			
+			string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+			
+			TaskDialog.Show("Paths", tempPath);
+			
+			string file = "test.txt";
+			
+			string filePath = Path.Combine(tempPath,file);
+			
+			string fileN = @"C:\Users\Julian\Documents\TAFE Course\RevitMacroStream.txt";
+				if(File.Exists(fileN))
+			{
+				File.Delete(fileN);
+			}
+			using (StreamWriter writer = new StreamWriter(@"C:\Users\Julian\Documents\TAFE Course\RevitMacroStream.txt"))
+			{
+				writer.WriteLine("This is some text");
+				writer.WriteLine("This is some other text");
+			}
+			
+			
+			
+		}
+		public void SearchFolder()
+		{
+			string files = "";
+			string folder = @"C:\ProgramData\Autodesk\RVT 2019\Libraries\Australia\Structural Trusses";
+			foreach (string filename in Directory.GetFiles(folder,"*.rfa"))
+			{
+				files += filename + "\n";	
+			}
+			TaskDialog.Show("Files",files);
+		}
+	}
+}

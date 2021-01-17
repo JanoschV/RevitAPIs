@@ -1,0 +1,305 @@
+/*
+ * Created by SharpDevelop.
+ * User: Julian
+ * Date: 20/06/2019
+ * Time: 4:29 PM
+ * 
+ * To change this template use Tools | Options | Coding | Edit Standard Headers.
+ */
+using System;
+using Autodesk.Revit.UI;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI.Selection;
+using System.Collections.Generic;
+using System.Linq;
+
+
+namespace Macro1
+{
+    [Autodesk.Revit.Attributes.Transaction(Autodesk.Revit.Attributes.TransactionMode.Manual)]
+    [Autodesk.Revit.DB.Macros.AddInId("6D6A0578-0033-403B-8321-3F743ACA1F64")]
+	public partial class ThisApplication
+	{
+		private void Module_Startup(object sender, EventArgs e)
+		{
+
+		}
+
+		private void Module_Shutdown(object sender, EventArgs e)
+		{
+
+		}
+
+		#region Revit Macros generated code
+		private void InternalStartup()
+		{
+			this.Startup += new System.EventHandler(Module_Startup);
+			this.Shutdown += new System.EventHandler(Module_Shutdown);
+		}
+		#endregion
+		public void Dialog()
+		{
+			
+			TaskDialog td = new TaskDialog("Task dialog");
+			td.MainInstruction = "Some Text";
+			td.Show();
+		}
+		public void Selection()
+		{
+			UIDocument udoc = this.ActiveUIDocument;
+			
+			Document doc = udoc.Document;
+			
+			Reference elref = udoc.Selection.PickObject(ObjectType.Edge);
+			
+			Element el = doc.GetElement(elref);
+			
+			Wall w = el as Wall;
+			
+			string designOption = "none";
+				
+			if (el.DesignOption != null)
+				
+			{
+				designOption = el.DesignOption.Name;
+			}
+			
+			TaskDialog.Show("Metrics",el.Category.Name + "\n" + "Category" + w.WallType.Name + designOption );
+		}
+		public void SelEdge()
+		{
+			UIDocument udoc = this.ActiveUIDocument;
+			
+			Document doc = udoc.Document;
+			
+			Reference elref = udoc.Selection.PickObject(ObjectType.Edge);
+			
+			Element el = doc.GetElement(elref);
+			
+			GeometryObject geob = el.GetGeometryObjectFromReference(elref);
+			
+			Edge edge = geob as Edge;
+			
+			TaskDialog.Show("Information", el.Name + "\n" + el.Category.Name + "\n" + Math.Floor(edge.ApproximateLength));
+			
+		}
+		public void selFace()
+		{
+			UIDocument udoc = this.ActiveUIDocument;
+			
+			Document doc = udoc.Document;
+			
+			Reference elref = udoc.Selection.PickObject(ObjectType.Face);
+			
+			Element el = doc.GetElement(elref);
+			
+			GeometryObject geob = el.GetGeometryObjectFromReference(elref);
+			
+			Face face = geob as Face;
+			
+			TaskDialog.Show("Information", el.Name + "\n" + el.Category.Name + "\n" + face.Area);
+			
+			
+			
+			
+			
+		}
+		public void SetSelection()
+		{
+			UIDocument udoc = this.ActiveUIDocument;
+
+			Document doc = udoc.Document;
+
+			ICollection<ElementId> walls = new FilteredElementCollector(doc).OfClass(typeof(Wall)).ToElementIds();
+			
+			udoc.Selection.SetElementIds(walls);
+			
+		}
+		public void SelectionFilter()
+		{
+			UIDocument udoc = this.ActiveUIDocument;
+			
+			Document doc = udoc.Document;
+			
+			ICollection<ElementId> selectedIds = udoc.Selection.GetElementIds();
+			
+			string s ="";
+			
+			foreach (ElementId id in selectedIds)
+			{
+				Element el = doc.GetElement(id);
+					
+				s += el.Name + "\n";
+			}
+			
+			TaskDialog.Show("Elements", selectedIds.Count + "\n" + s);
+			
+		}
+		public void FilterPick()
+		{
+			Document doc = this.ActiveUIDocument.Document;
+			
+			string wallinf = "";
+			
+			foreach (Element e in new FilteredElementCollector(doc).OfClass(typeof(WallType))) 
+			{
+				wallinf += e.Name + "\n";
+			}
+			
+			int wallCount = new FilteredElementCollector(doc).OfClass(typeof(WallType)).Count();
+			
+			TaskDialog.Show("elements", wallinf);
+		}
+		public void ClassFilter()
+		{
+			Document doc = this.ActiveUIDocument.Document;
+			
+			ElementClassFilter Classfilt = new ElementClassFilter(typeof(Wall));
+			
+			ElementOwnerViewFilter Viewfilt = new ElementOwnerViewFilter(doc.ActiveView.Id);
+			
+			String text = "";
+				
+				foreach (Element e in new FilteredElementCollector(doc)
+				         .WherePasses(Classfilt)
+				         .WherePasses(Viewfilt)
+				        )
+			{
+				Wall wall = e as Wall;
+				text += wall.Name + "\n";
+			}
+			
+			TaskDialog.Show("Text",text);
+				
+		}
+		public void DoorFilt()
+		{
+			Document doc = this.ActiveUIDocument.Document;
+			
+			string info = "";
+			
+			ElementCategoryFilter Doorfilt = new ElementCategoryFilter(BuiltInCategory.OST_Doors);
+			
+			ElementCategoryFilter Windfilt = new ElementCategoryFilter(BuiltInCategory.OST_Windows);
+			
+			LogicalOrFilter orFilt = new LogicalOrFilter(Doorfilt,Windfilt);
+			
+			IList<BuiltInCategory> catList = new List<BuiltInCategory>();
+			
+			catList.Add(BuiltInCategory.OST_Doors);
+			
+			catList.Add(BuiltInCategory.OST_Windows);
+			
+			ElementMulticategoryFilter multiCatFilt = new ElementMulticategoryFilter(catList);
+			
+			foreach (Element e in new FilteredElementCollector(doc,doc.ActiveView.Id)
+			         .OfClass(typeof(FamilyInstance))
+			         .WherePasses(multiCatFilt))
+			{
+				FamilyInstance fi = e as FamilyInstance;
+				
+				FamilySymbol fs = fi.Symbol;
+				
+				Family family = fs.Family;
+				
+				info += family.Name + ": " + fs.Name + ": " + fi.Name + "\n";
+			}
+			
+			TaskDialog.Show("Info",info);
+		}
+		public void NewFilter()
+		{
+			Document doc = this.ActiveUIDocument.Document;
+			
+			UIDocument uidoc = this.ActiveUIDocument;
+			
+			XYZ p1 = uidoc.Selection.PickPoint();
+			
+			XYZ p2 = uidoc.Selection.PickPoint();
+			
+			Outline outline = new Outline(p1,p2);
+			
+			BoundingBoxIntersectsFilter bboxFilter = new BoundingBoxIntersectsFilter(outline);
+			
+			ElementClassFilter classFilt = new ElementClassFilter(typeof(SpatialElement));
+			
+			string txt = "";
+			
+			FilteredElementCollector elFilt = new FilteredElementCollector(doc)
+				.WherePasses(classFilt);
+				
+				foreach (Element e in elFilt)
+			{
+				txt += e.Name + "\n";
+			}
+			
+			TaskDialog.Show("Text",txt);
+		}
+		public void Linq()
+		{
+			Document doc = this.ActiveUIDocument.Document;
+			string info = "";
+			//FilteredElementCollector elFilt = new FilteredElementCollector(doc)
+			//	.OfClass(typeof(FamilyInstance))
+			//	.OfCategory(BuiltInCategory.OST_Doors).Cast<FamilyInstance>();
+			
+			
+			foreach (FamilyInstance fi in new FilteredElementCollector(doc)
+				.OfClass(typeof(FamilyInstance))
+				.OfCategory(BuiltInCategory.OST_Doors).Cast<FamilyInstance>()
+				.Where(m=>m.Symbol.Family.Name.Contains("Single")))
+			
+			{
+				
+				FamilySymbol fs = fi.Symbol;
+				
+				Family fam = fs.Family;
+				
+				info += fam.Name + ": " + fs.Name +": " + fi.Name + "\n";
+				
+			}
+			
+			TaskDialog.Show("elements",info);
+		}
+		public void CADLookup()
+		{
+			Document doc = this.ActiveUIDocument.Document;
+			
+			IEnumerable<Element> imports = new FilteredElementCollector(doc)
+				.OfClass(typeof(ImportInstance))
+				.Cast<ImportInstance>()
+				.Where(q=> q.IsLinked && doc.GetElement(q.OwnerViewId) is ViewDrafting)
+				.Select(q=>doc.GetElement(q.OwnerViewId));
+			
+			TaskDialog.Show("imports",imports.Count().ToString());
+			
+			
+		}
+		public void ParameterCreation()
+		{
+			Document doc = this.ActiveUIDocument.Document;
+			if(!doc.IsFamilyDocument)
+			{
+				return;
+			}
+			
+			using (Transaction t = new Transaction(doc,"Testing Family"))
+			{
+				t.Start();
+				
+				FamilyManager mgmt = doc.FamilyManager;
+				
+				FamilyParameter famParam = mgmt.AddParameter("Parameter One",BuiltInParameterGroup.PG_DATA, ParameterType.Text, false);
+				
+				for (int i = 1; i<5;i++)
+				{
+					FamilyType typeNew = mgmt.NewType(i.ToString());
+					mgmt.CurrentType = typeNew;
+					mgmt.Set(famParam,"This is my value: " + i);
+				}
+				t.Commit();
+			}
+			
+		}
+	}
+}
