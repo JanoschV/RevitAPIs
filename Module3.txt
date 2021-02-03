@@ -1,0 +1,265 @@
+ * Created by SharpDevelop.
+ * User: Julian
+ * Date: 28/01/2021
+ * Time: 5:01 PM
+ * 
+ * To change this template use Tools | Options | Coding | Edit Standard Headers.
+ */
+using System;
+using Autodesk.Revit.UI;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI.Selection;
+using System.Collections.Generic;
+using System.Linq;
+using Autodesk.Revit.DB.Structure;
+			
+
+namespace LearnAPI_C3
+{
+    [Autodesk.Revit.Attributes.Transaction(Autodesk.Revit.Attributes.TransactionMode.Manual)]
+    [Autodesk.Revit.DB.Macros.AddInId("6FEC3678-F62D-4B91-882A-B535AF32A738")]
+	public partial class ThisApplication
+	{
+		private void Module_Startup(object sender, EventArgs e)
+		{
+
+		}
+
+		private void Module_Shutdown(object sender, EventArgs e)
+		{
+
+		}
+
+		#region Revit Macros generated code
+		private void InternalStartup()
+		{
+			this.Startup += new System.EventHandler(Module_Startup);
+			this.Shutdown += new System.EventHandler(Module_Shutdown);
+		}
+		#endregion
+		public void DeleteElement()
+		{
+			UIDocument uidoc = this.ActiveUIDocument;
+			Document doc = uidoc.Document;
+			
+			
+			ElementId id = uidoc.Selection.PickObject(ObjectType.Element).ElementId;
+			
+			using(Transaction t = new Transaction(doc,"Delete an Element"))
+				{
+				t.Start();
+				
+			doc.Delete(id);
+			
+				t.Commit();
+				}
+			
+		}
+		
+		public void SetParam_GenericAnnotation()
+		{
+			Document doc = this.ActiveUIDocument.Document;
+			
+			string parameterTypeError = "";
+			
+			using(Transaction t = new Transaction(doc, "Set Annotation Parameter"))
+			{
+				t.Start();
+				
+				foreach (FamilyInstance fi in new FilteredElementCollector(doc)
+				          .OfClass(typeof(FamilyInstance))
+				          .OfCategory(BuiltInCategory.OST_DetailComponents)
+				          .Cast<FamilyInstance>())                     
+				{
+					Parameter p = fi.LookupParameter("View");
+					
+					if(p==null)
+						continue;
+						
+					if(p.StorageType!= StorageType.String)
+					{
+						parameterTypeError += fi.Symbol.Family.Name+ "-" + p.StorageType.ToString()+"\n";
+						continue;
+					}
+					
+					Element ownerView = doc.GetElement(fi.OwnerViewId);
+					p.Set(ownerView.Name);
+				}
+				if(parameterTypeError!="")
+				{
+					TaskDialog.Show("Error", "Parameter must be a string \n" + parameterTypeError);
+				}
+				
+				t.Commit();
+			}
+		}
+		
+		public void builtinElementParams()
+		{
+			UIDocument uidoc = this.ActiveUIDocument;
+			
+			Document doc = uidoc.Document;
+			
+			Element el = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element));
+			
+			string data = "";
+			
+			foreach (BuiltInParameter bltParam in Enum.GetValues(typeof(BuiltInParameter)))
+			     	{
+						try 
+						{
+							Parameter p = el.get_Parameter(bltParam);
+							
+							data += bltParam.ToString() + ": " + p.Definition.Name + ": ";
+							
+							if(p.StorageType == StorageType.String)
+								data += p.AsString();
+							else if(p.StorageType == StorageType.Double)
+								data += p.AsDouble();
+							else if(p.StorageType == StorageType.Integer)
+								data += p.AsInteger();
+							else if(p.StorageType == StorageType.ElementId)
+								data += p.AsElementId().IntegerValue;
+							data +="\n";
+							
+							
+						} 
+						catch (Exception) 
+						{
+							
+							continue;
+						}
+			         	
+					}
+			
+			         TaskDialog.Show("Built in Params", data);
+			
+			
+		}
+		
+		public void keynoteArea()
+		{
+			UIDocument uidoc = this.ActiveUIDocument;
+			Document doc = uidoc.Document;
+			
+			List<Element> elements = new FilteredElementCollector(doc).WhereElementIsNotElementType().ToList();
+			
+			List<Tuple<ElementId,double,string>> results = new List<Tuple<ElementId,double,string>>();
+			
+			foreach (Element el in elements) 
+			{
+				Parameter areaParam = el.get_Parameter(BuiltInParameter.HOST_AREA_COMPUTED);
+				if(areaParam ==null)
+					continue;
+				
+				ElementId typeID = el.GetTypeId();
+				Element typeElement = doc.GetElement(typeID);
+				
+				Parameter keynoteParam = typeElement.get_Parameter(BuiltInParameter.KEYNOTE_PARAM);
+				
+				Tuple<ElementId,double,string> thisElementData = new Tuple<ElementId, double, string>(el.Id,areaParam.AsDouble(),keynoteParam.AsString());
+				
+				
+				results.Add(thisElementData);
+			//	thisElementData.Item2 = el.
+			}
+		}
+		
+		public void WallCreate()
+		{
+				UIDocument uidoc = this.ActiveUIDocument;
+				
+				Document doc = uidoc.Document;
+				
+				Line li =Line.CreateBound(XYZ.Zero,new XYZ(10,10,0));
+				
+				ElementId Levelid = uidoc.Selection.PickObject(ObjectType.Element,"Select a level").ElementId;
+				
+				Curve c = li as Curve;
+				
+				using(Transaction t = new Transaction(doc,"Wall Created"))
+				      {
+				      	
+					t.Start();
+					
+					Wall w = Wall.Create(doc,c,Levelid,false);
+					
+					t.Commit();
+					
+				      }
+				
+				
+		}
+		public void newDesk()
+		{
+			UIDocument uidoc = this.ActiveUIDocument;
+			Document doc = uidoc.Document;
+			
+			Level lev = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().OrderBy(q=>q.Elevation).First();
+			Family f = new FilteredElementCollector(doc).OfClass(typeof(Family)).FirstOrDefault(q=>q.Name=="Bar Chair") as Family;
+			//FamilySymbol fs = f.GetFamilySymbolIds().Select(q=>doc.GetElement(q)).First(q=>q.Name=="72\" x 36\"") as FamilySymbol;
+			List<Element> list = f.GetFamilySymbolIds().Select(q=>doc.GetElement(q)).ToList();
+			Element fs7236 = list.FirstOrDefault();
+			FamilySymbol fs = fs7236 as FamilySymbol;
+			
+			XYZ point = uidoc.Selection.PickPoint("Pick your nose");
+			
+			using (Transaction t = new Transaction(doc,"Created Family Instance"))
+			{
+				
+				try 
+				{
+					t.Start();	
+					if(!fs.IsActive)
+					fs.Activate();
+				
+				FamilyInstance fi = doc.Create.NewFamilyInstance(point,fs,lev,Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+				t.Commit();
+				}
+				catch (Exception)
+				{
+					
+				
+				}
+			
+			}
+		}
+		
+		public void MakeDoor()
+		{
+			UIDocument uidoc = this.ActiveUIDocument;
+			Document doc = uidoc.Document;
+			
+			Level l = new FilteredElementCollector(doc).OfClass(typeof(Level)).Cast<Level>().OrderBy(q=>q.Elevation).FirstOrDefault();
+			Family f = new FilteredElementCollector(doc).OfClass(typeof(Family)).Cast<Family>()
+				.FirstOrDefault(q=>q.FamilyCategoryId.IntegerValue ==(int)BuiltInCategory.OST_Doors && q.Name  =="Single-Flush") as Family;
+			if(f==null)
+			{
+				TaskDialog.Show("Youre frucked","f.Name");
+				return;
+			}
+			
+			FamilySymbol fs = doc.GetElement(f.GetFamilySymbolIds().First()) as FamilySymbol;
+			Reference myRef = uidoc.Selection.PickObject(ObjectType.Element,"Pick Wall Point");
+			XYZ pt = myRef.GlobalPoint;
+			Element host = doc.GetElement(myRef);
+			
+			using(Transaction t = new Transaction(doc,"Create new Door"))
+			{
+				t.Start();
+				FamilyInstance fi = doc.Create.NewFamilyInstance(pt,fs,host, l, Autodesk.Revit.DB.Structure.StructuralType.NonStructural);
+				t.Commit();
+				
+			}
+			
+		}
+		public void RotateElement()
+		{
+			UIDocument uidoc = this.ActiveUIDocument;
+			Document doc = uidoc.Document;
+			Element e = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element));
+			
+			
+		}
+	}
+}

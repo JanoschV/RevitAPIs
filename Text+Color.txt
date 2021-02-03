@@ -1,0 +1,21 @@
+public void textColor()
+{
+	Document doc = this.ActiveUIDocument.Document;
+	UIDocument uidoc = this.ActiveUIDocument;
+	TextNote tn = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element)) as TextNote;
+	TextNoteType tnType = tn.TextNoteType;
+	Parameter tnColor = tnType.get_Parameter(BuiltInParameter.LINE_COLOR);
+	
+	// create color using Color.FromArgb with RGB inputs
+	System.Drawing.Color color = System.Drawing.Color.FromArgb(255,0,0);
+	
+	// convert color into an integer
+	int colorInt = System.Drawing.ColorTranslator.ToWin32(color);
+	
+	using (Transaction t = new Transaction(doc,"color"))
+	{
+		t.Start();
+		tnColor.Set(colorInt);
+		t.Commit();
+	}
+}

@@ -1,0 +1,25 @@
+		public void CreateTextNote()
+		{
+			UIDocument uidoc = this.ActiveUIDocument;
+			Document doc = uidoc.Document;
+
+			XYZ point = uidoc.Selection.PickPoint();
+			
+			using (Transaction t = new Transaction(doc, "Create Text Note"))
+			{
+				t.Start();
+				TextNoteOptions options = new TextNoteOptions();
+				options.HorizontalAlignment = HorizontalTextAlignment.Center;
+				options.TypeId = (new FilteredElementCollector(doc).OfClass(typeof(TextNoteType)).FirstOrDefault()).Id;
+				TextNote note = TextNote.Create(doc, doc.ActiveView.Id, point, 1, 
+				         "I am an API created text note" + Environment.NewLine + "Line 2 of the text",
+				         options);
+				
+				Parameter arcParameter = note.get_Parameter(BuiltInParameter.ARC_LEADER_PARAM);
+				arcParameter.Set(1);
+				
+				Leader l = note.AddLeader(TextNoteLeaderTypes.TNLT_ARC_L);
+				
+				t.Commit();
+			}
+		}
