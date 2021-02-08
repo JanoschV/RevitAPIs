@@ -1,0 +1,132 @@
+/*
+ * Created by SharpDevelop.
+ * User: Julian
+ * Date: 3/02/2021
+ * Time: 9:11 PM
+ * 
+ * To change this template use Tools | Options | Coding | Edit Standard Headers.
+ */
+using System;
+using Autodesk.Revit.UI;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI.Selection;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LearnAPI_C4
+{
+    [Autodesk.Revit.Attributes.Transaction(Autodesk.Revit.Attributes.TransactionMode.Manual)]
+    [Autodesk.Revit.DB.Macros.AddInId("0E356153-BFA7-4F29-89DB-A3F3F7A8EF9E")]
+	public partial class ThisApplication
+	{
+		private void Module_Startup(object sender, EventArgs e)
+		{
+
+		}
+
+		private void Module_Shutdown(object sender, EventArgs e)
+		{
+
+		}
+		public void location()
+		{
+			
+			Document doc = this.ActiveUIDocument.Document;
+			UIDocument uidoc = this.ActiveUIDocument;
+			Element el = doc.GetElement(uidoc.Selection.PickObject(ObjectType.Element));
+			
+			Location loc = el.Location;
+			TaskDialog.Show("Location type",loc.ToString());
+			
+			if(loc is LocationCurve)
+			{
+				LocationCurve lc = loc as LocationCurve;
+				Curve c = lc.Curve;
+				XYZ end0 = c.GetEndPoint(0);
+				XYZ end1 = c.GetEndPoint(1);
+				
+				
+				TaskDialog.Show("curve length: ",end0.ToString() + "\n"+ end1.ToString());
+				if(c is Line)
+				{
+					Line l = c as Line;
+					TaskDialog.Show("Direction", l.Direction.ToString());
+				
+				}
+				else
+				{
+					Transform tr = c.ComputeDerivatives(0.5,true);
+					XYZ tangent = tr.BasisX;
+					XYZ unitTan = tangent.Normalize();
+					TaskDialog.Show("Direction", tangent.ToString() + unitTan.ToString());
+				}
+			}
+			else
+			{
+				LocationPoint lp = loc as LocationPoint;
+				XYZ pt = lp.Point;
+				TaskDialog.Show("Point", pt.ToString());
+			}
+			
+		}
+
+		#region Revit Macros generated code
+		private void InternalStartup()
+		{
+			this.Startup += new System.EventHandler(Module_Startup);
+			this.Shutdown += new System.EventHandler(Module_Shutdown);
+		}
+		#endregion
+		public void GetHostGeom()
+		{
+			Document doc = this.ActiveUIDocument.Document;
+			string info = "";
+			foreach (HostObject hostObj in new FilteredElementCollector(doc).OfClass(typeof(HostObject))) 
+			{
+				info += hostObj.Name;	
+				try 
+				{
+				IList<Reference> sideFace = HostObjectUtils.GetSideFaces(hostObj,ShellLayerType.Exterior);						
+				foreach (Reference  myref in sideFace) 
+				{
+					Face f = hostObj.GetGeometryObjectFromReference(myref) as Face;
+					info += " side Area: " + f.Area + ",";
+					
+					
+				}
+				}
+				catch (Exception)
+				{
+				}
+				
+				try 
+				{
+				IList<Reference> sideFace = HostObjectUtils.GetBottomFaces(hostObj);						
+				foreach (Reference  myref in sideFace) 
+				{
+					Face f = hostObj.GetGeometryObjectFromReference(myref) as Face;
+					info += "bottom Area: " + f.Area + "\n";
+						
+					
+				}
+				}
+				catch
+				{}
+				info += "\n";
+				
+			}
+			
+				TaskDialog.Show("Host Objects", info);
+				
+			
+		}
+		
+		public void getSolids()
+		{
+			Document doc = this.ActiveUIDocument.Document;
+			
+		}
+		
+	
+	}
+}
